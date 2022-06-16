@@ -20,7 +20,7 @@ library(htmlwidgets)
 
   
 # set wd
-setwd("C:/Users/user/Dropbox/Halo-Halo/Halo-Halo IG & Website/Sonstiges/Pinboard Map")
+setwd("C:/Users/user/Dropbox/Halo-Halo/Halo-Halo IG & Website/Sonstiges/Pinboard Map/git/halohalomap")
 
 # clear workspace
 rm(list = ls())
@@ -57,19 +57,27 @@ for(i in 1:nrow(maillist)){
 
 
 # add jitter to coordinates so that identical coordinates differ slightly
- maillist$lat_jit <- jitter(maillist$lat, factor = 2)
- maillist$lon_jit <- jitter(maillist$long, factor = 2)
+ maillist$lat_jit <- jitter(maillist$lat, factor = 3)
+ maillist$lon_jit <- jitter(maillist$long, factor = 12)
 
 
 # convert 
- maillist2 <- maillist %>% sf::st_as_sf(coords = c("long", "lat"), crs = 4326) 
+ maillist2 <- maillist %>% sf::st_as_sf(coords = c("lon_jit", "lat_jit"), crs = 4326) 
+
+ 
+# geb bb of germany to set default zoom 
+ de_bb <-  getbb("Germany")
+ de_long <- 10.4541
+ de_lat <- 51.1642
  
   
 # Create map with pin-clustering with leaflet  
-map_clust <- leaflet(maillist) %>% addProviderTiles("CartoDB.Positron", 
-                                       options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
+map_clust <- leaflet(maillist) %>% 
+  addProviderTiles("CartoDB.Positron",
+                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
   addMarkers(label = ~ `Ort / Stadt (optional)`,
-  clusterOptions = markerClusterOptions(maxClusterRadius = 10))
+             clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>% 
+  setView(de_long, de_lat, zoom = 5)
 map_clust
 
 # Create map with pins (no clustering) - for IG
@@ -86,11 +94,12 @@ greenLeafIcon <- makeIcon(
 pal <- colorFactor(c("#f3bb50", "#326ebd", "#d15956"), domain = c("Österreich", "Deutschland", "Schweiz"))
 
 map <- leaflet(maillist2) %>% addProviderTiles("CartoDB.Positron", 
-                                                    options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
+                                              options = providerTileOptions(minZoom = 2, maxZoom = 10)) %>% 
   addCircleMarkers(label = ~ `Ort / Stadt (optional)`,
     color = ~pal(Land),
     stroke = FALSE, fillOpacity = 0.5
-  )
+  ) %>% 
+  setView(de_long, de_lat, zoom = 5)
 #  addMarkers(label = ~ `Ort / Stadt (optional)`) #, icon = greenLeafIcon)
 
 map
