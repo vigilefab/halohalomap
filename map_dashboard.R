@@ -17,8 +17,9 @@ library(lubridate)
 library(dplyr)
 library(sf)
 library(htmlwidgets)
+library(htmltools)
+library(magrittr)
 
-  
 # set wd
 setwd("C:/Users/user/Dropbox/Halo-Halo/Halo-Halo IG & Website/Sonstiges/Pinboard Map/git/halohalomap")
 
@@ -32,8 +33,9 @@ rm(list = ls())
 
 
 
-
-#----- START MAIN CODE -----#
+#-------------------------------------------------
+#----- WHERE ARE WE SCATTERED ACROSS EUROPE -----#
+#-------------------------------------------------
 
 # import mailing mailing list
 maillist <- read_xlsx(path = "../../20220611_Mailinglist.xlsx", col_types = "text")
@@ -57,8 +59,8 @@ for(i in 1:nrow(maillist)){
 
 
 # add jitter to coordinates so that identical coordinates differ slightly
- maillist$lat_jit <- jitter(maillist$lat, factor = 3)
- maillist$lon_jit <- jitter(maillist$long, factor = 12)
+ maillist$lat_jit <- jitter(maillist$lat, factor = 12)
+ maillist$lon_jit <- jitter(maillist$long, factor = 3)
 
 
 # convert 
@@ -113,6 +115,87 @@ saveWidget(map, 'map.html', selfcontained = FALSE)
 
 table(maillist$Land)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------
+#----- HALO-HALO KITAKITS -----#
+#-------------------------------
+
+# import mailing mailing list
+kitakits <- read_xlsx(path = "../../20220624_Kitakits.xlsx")
+kitakits$Date <- format(kitakits$Date, "%d %B %Y")
+
+# create content of pop-up
+br <- "<br/>"
+kitakits <- kitakits %>% 
+  mutate(content = paste0("<img src = '", Image, "', width = 100%>", br,
+                          "<b><a href='", Link, "'>", Event, "</a></b>", br,
+                          Place, ", ", Country, br,
+                          Date)
+         )
+
+# clean cities
+kitakits$city <- paste0(kitakits$`Place`, ", ", kitakits$Country)
+
+# using getbb() function to geocode locations
+for(i in 1:nrow(kitakits)){
+  coordinates = getbb(kitakits$city[i])
+  kitakits$long[i] = (coordinates[1,1] + coordinates[1,2])/2
+  kitakits$lat[i] = (coordinates[2,1] + coordinates[2,2])/2
+}
+
+
+
+# convert 
+kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("lon_jit", "lat_jit"), crs = 4326) 
+
+
+# geb bb of germany to set default zoom 
+de_bb <-  getbb("Germany")
+de_long <- 10.4541
+de_lat <- 51.1642
+
+
+# Create map with pin-clustering with leaflet  
+kitakits_clust <- leaflet(kitakits) %>%  
+  addMarkers(~long, ~lat, popup = kitakits$content, label = kitakits$city) %>% 
+    addProviderTiles("CartoDB.Positron",
+                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
+  setView(de_long, de_lat, zoom = 5)
+kitakits_clust
+
+
+# IDEA: CHANGE COLOR OF MARKERS: https://github.com/pointhi/leaflet-color-markers
+
+
+# Export as HTML file
+saveWidget(kitakits_clust, 'kitakits_cluster.html', selfcontained = FALSE)
+
+
+
+
+table(maillist$Land)
 
 
 
