@@ -147,9 +147,10 @@ kitakits <- read_xlsx(path = "../../20220624_Kitakits.xlsx")
 kitakits$Date <- format(kitakits$Date, "%d %B %Y")
 
 # create content of pop-up
+w <- 170
 br <- "<br/>"
 kitakits <- kitakits %>% 
-  mutate(content = paste0("<img src = '", Image, "', width = 100%>", br,
+  mutate(preview = paste0("<center><img src = '", Image, "', width = ", w, "px></center>", #br,
                           "<b><a href='", Link, "'>", Event, "</a></b>", br,
                           Place, ", ", Country, br,
                           Date)
@@ -179,10 +180,14 @@ de_lat <- 51.1642
 
 # Create map with pin-clustering with leaflet  
 kitakits_clust <- leaflet(kitakits) %>%  
-  addMarkers(~long, ~lat, popup = kitakits$content, label = kitakits$city) %>% 
-    addProviderTiles("CartoDB.Positron",
+#  addMarkers(~long, ~lat, label = kitakits$city) %>% 
+  addPopups(~long, ~lat, popup=kitakits$preview, 
+            options = popupOptions(maxWidth = w,
+                                   closeButton = FALSE
+            )) %>% 
+  addProviderTiles("CartoDB.Positron",
                    options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
-  setView(de_long, de_lat, zoom = 5)
+  setView(de_long, de_lat, zoom = 7)
 kitakits_clust
 
 
