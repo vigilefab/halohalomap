@@ -169,7 +169,7 @@ for(i in 1:nrow(kitakits)){
 
 
 # convert 
-kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("lon_jit", "lat_jit"), crs = 4326) 
+kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("long", "lat"), crs = 4326) 
 
 
 # geb bb of germany to set default zoom 
@@ -177,19 +177,53 @@ de_bb <-  getbb("Germany")
 de_long <- 10.4541
 de_lat <- 51.1642
 
+# determine colors
+pal2 <- colorFactor(c("#f3bb50", "#326ebd", "#d15956"), domain = c("Austria", "Germany", "Switzerland"))
+pal3 <- colorFactor(c("#326ebd", "#f3bb50", "#d15956"), domain = c("Austria", "Germany", "Switzerland"))
+
+
+# Create labels as list
+labs <- as.list(kitakits$preview)
 
 # Create map with pin-clustering with leaflet  
 kitakits_clust <- leaflet(kitakits) %>%  
-#  addMarkers(~long, ~lat, label = kitakits$city) %>% 
-  addPopups(~long, ~lat, popup=kitakits$preview, 
-            options = popupOptions(maxWidth = w,
-                                   closeButton = FALSE
-            )) %>% 
+  addMarkers(~long, ~lat, popup = lapply(labs, HTML),  
+#             clusterOptions = markerClusterOptions(), # maxClusterRadius = 15)
+             ) %>% 
+#  addPopups(~long, ~lat, popup=kitakits$preview, 
+#            options = popupOptions(maxWidth = w,
+#                                   closeButton = TRUE
+#            )) %>% 
   addProviderTiles("CartoDB.Positron",
                    options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
   setView(de_long, de_lat, zoom = 7)
 kitakits_clust
 
+
+# Create map with pin-clustering with leaflet  
+kitakits_map2 <- leaflet(kitakits2) %>%  
+  addCircleMarkers(popup = lapply(labs, HTML), color = ~pal(Country),
+ ) %>% 
+  #  addPopups(~long, ~lat, popup=kitakits$preview, 
+  #            options = popupOptions(maxWidth = w,
+  #                                   closeButton = TRUE
+  #            )) %>% 
+  addProviderTiles("CartoDB.Positron",
+                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
+  setView(de_long, de_lat, zoom = 7)
+kitakits_map2
+
+
+
+kitakits_map <- leaflet(kitakits) %>% 
+  addProviderTiles("CartoDB.Positron",
+                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
+  addCircleMarkers(~long, ~lat, popup = lapply(labs, HTML),
+                   color = ~pal3(Country),
+                   stroke = FALSE, fillOpacity = 0.75,
+                   clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>% 
+  setView(de_long, de_lat, zoom = 5)
+kitakits_map
 
 # IDEA: CHANGE COLOR OF MARKERS: https://github.com/pointhi/leaflet-color-markers
 
