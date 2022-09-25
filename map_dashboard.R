@@ -229,7 +229,7 @@ kitakits_map
 
 
 # Export as HTML file
-saveWidget(kitakits_clust, 'kitakits_cluster.html', selfcontained = FALSE)
+saveWidget(kitakits_map, 'kitakits_map.html', selfcontained = FALSE)
 
 
 
