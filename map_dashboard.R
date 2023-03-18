@@ -19,7 +19,7 @@ library(sf)
 library(htmlwidgets)
 library(htmltools)
 library(magrittr)
-library(ggmap)
+library(tidygeocoder)
 
 # set wd
 setwd("C:/Users/user/Dropbox/Halo-Halo/Halo-Halo IG & Website/Sonstiges/Pinboard Map/git/halohalomap")
@@ -139,6 +139,7 @@ table(maillist$Land)
 
 
 
+
 #-------------------------------
 #----- HALO-HALO KITAKITS -----#
 #-------------------------------
@@ -163,18 +164,18 @@ kitakits <- kitakits %>%
                             false = paste0(Adresse, ", ", Country), 
                             true = paste0(Place, ", ", Country)))
 
-# using getggmap() function to geocode locations
+# using ggmap::geocodes() function to geocode locations
 # source: https://stackoverflow.com/questions/44527893/how-can-i-get-latitude-and-longitude-from-an-address-with-r
-for(i in 1:nrow(kitakits)){
-  coordinates = getbb(kitakits$city[i])
-  kitakits$long[i] = (coordinates[1,1] + coordinates[1,2])/2
-  kitakits$lat[i] = (coordinates[2,1] + coordinates[2,2])/2
-}
+kitakits <- kitakits %>%
+  geocode(location, method = 'osm', lat = latitude , long = longitude)
 
+# for some reason, the wiener stammtisch location doest get coords. add manually
+kitakits[kitakits$Event == "Monatliche Wiener Stammtisch", "latitude"] <- 48.197310787725286
+kitakits[kitakits$Event == "Monatliche Wiener Stammtisch", "longitude"] <- 16.365477428835185
 
 
 # convert 
-kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("long", "lat"), crs = 4326) 
+kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) 
 
 
 # geb bb of germany to set default zoom 
@@ -192,7 +193,7 @@ labs <- as.list(kitakits$preview)
 
 # Create map with pin-clustering with leaflet  
 kitakits_clust <- leaflet(kitakits) %>%  
-  addMarkers(~long, ~lat, popup = lapply(labs, HTML),  
+  addMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),  
 #             clusterOptions = markerClusterOptions(), # maxClusterRadius = 15)
              ) %>% 
 #  addPopups(~long, ~lat, popup=kitakits$preview, 
@@ -205,25 +206,11 @@ kitakits_clust <- leaflet(kitakits) %>%
 kitakits_clust
 
 
-# Create map with pin-clustering with leaflet  
-kitakits_map2 <- leaflet(kitakits2) %>%  
-  addCircleMarkers(popup = lapply(labs, HTML), color = ~pal(Country),
- ) %>% 
-  #  addPopups(~long, ~lat, popup=kitakits$preview, 
-  #            options = popupOptions(maxWidth = w,
-  #                                   closeButton = TRUE
-  #            )) %>% 
-  addProviderTiles("CartoDB.Positron",
-                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
-  setView(de_long, de_lat, zoom = 7)
-kitakits_map2
-
-
 
 kitakits_map <- leaflet(kitakits) %>% 
   addProviderTiles("CartoDB.Positron",
-                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
-  addCircleMarkers(~long, ~lat, popup = lapply(labs, HTML),
+                   options = providerTileOptions(minZoom = 2, maxZoom = 12)) %>% 
+  addCircleMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),
                    color = ~pal3(Country),
                    stroke = FALSE, fillOpacity = 0.75,
                    clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>% 
@@ -234,13 +221,13 @@ kitakits_map
 
 
 # Export as HTML file
+saveWidget(kitakits_clust, 'kitakits_clust.html', selfcontained = FALSE)
 saveWidget(kitakits_map, 'kitakits_map.html', selfcontained = FALSE)
 
 
 
 
 table(maillist$Land)
-
 
 
 
