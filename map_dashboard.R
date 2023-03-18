@@ -19,6 +19,7 @@ library(sf)
 library(htmlwidgets)
 library(htmltools)
 library(magrittr)
+library(ggmap)
 
 # set wd
 setwd("C:/Users/user/Dropbox/Halo-Halo/Halo-Halo IG & Website/Sonstiges/Pinboard Map/git/halohalomap")
@@ -38,7 +39,7 @@ rm(list = ls())
 #-------------------------------------------------
 
 # import mailing mailing list
-maillist <- read_xlsx(path = "../../20220611_Mailinglist.xlsx", col_types = "text")
+maillist <- read_xlsx(path = "../../Mailinglist.xlsx", col_types = "text")
 
 
 # clean date
@@ -143,7 +144,7 @@ table(maillist$Land)
 #-------------------------------
 
 # import mailing mailing list
-kitakits <- read_xlsx(path = "../../20220624_Kitakits.xlsx")
+kitakits <- read_xlsx(path = "../../Kitakits.xlsx")
 kitakits$Date <- format(kitakits$Date, "%d %B %Y")
 
 # create content of pop-up
@@ -157,9 +158,13 @@ kitakits <- kitakits %>%
          )
 
 # clean cities
-kitakits$city <- paste0(kitakits$`Place`, ", ", kitakits$Country)
+kitakits <- kitakits %>% 
+  mutate(location = if_else(is.na(Adresse), 
+                            false = paste0(Adresse, ", ", Country), 
+                            true = paste0(Place, ", ", Country)))
 
-# using getbb() function to geocode locations
+# using getggmap() function to geocode locations
+# source: https://stackoverflow.com/questions/44527893/how-can-i-get-latitude-and-longitude-from-an-address-with-r
 for(i in 1:nrow(kitakits)){
   coordinates = getbb(kitakits$city[i])
   kitakits$long[i] = (coordinates[1,1] + coordinates[1,2])/2
