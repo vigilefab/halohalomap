@@ -147,8 +147,7 @@ table(maillist$Land)
 #-------------------------------
 
 # import mailing mailing list
-kitakits <- read_xlsx(path = "../../Kitakits.xlsx")
-kitakits$Date <- format(kitakits$Date, "%d %B %Y")
+kitakits <- read_xlsx(path = "../../Kitakits.xlsx", col_types = c("date", rep("text", 6)))
 
 # create content of pop-up
 w <- 170
@@ -182,8 +181,14 @@ kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("longitude", "latitude"), crs 
 
 # geb bb of germany to set default zoom
 de_bb <-  getbb("Germany")
-de_long <- 10.4541
-de_lat <- 51.1642
+de_long <-  10.4541
+de_lat <-  51.1642
+
+start_coords <- kitakits[kitakits$Date == max(kitakits$Date), c("Date", "Event", "longitude", "latitude", "preview")]
+
+# most recent events in three countries
+recent <- kitakits %>% group_by(Country) %>% summarize(recent_date = max(Date))
+most_recent <- kitakits[kitakits$Date %in% recent$recent_date, c("Date", "Event", "longitude", "latitude", "preview")]
 
 # determine colors
 pal2 <- colorFactor(c("#f3bb50", "#326ebd", "#d15956"), domain = c("Austria", "Germany", "Switzerland"))
@@ -193,24 +198,29 @@ pal3 <- colorFactor(c("#326ebd", "#f3bb50", "#d15956"), domain = c("Austria", "G
 # Create labels as list
 labs <- as.list(kitakits$preview)
 
-# Create map with pin-clustering with leaflet
-kitakits_clust <- leaflet(kitakits) %>%
-  addMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),
-#             clusterOptions = markerClusterOptions(), # maxClusterRadius = 15)
-             ) %>%
-#  addPopups(~long, ~lat, popup=kitakits$preview,
-#            options = popupOptions(maxWidth = w,
-#                                   closeButton = TRUE
-#            )) %>%
+# kitakits map
+kitakits_map <- leaflet(kitakits) %>%
+  addMarkers(~longitude, ~latitude, popup = lapply(labs, HTML)) %>%
+  # addMarkers(lng = as.numeric(start_coords[1, "longitude"]), 
+  #            lat = as.numeric(start_coords[1, "latitude"]), 
+  #            # popup = as.character(start_coords[1, "preview"]),
+  #            # popupOptions = popupOptions(closeOnClick = FALSE)
+  #            ) %>%
+  addPopups(lng = most_recent$longitude, 
+            lat = most_recent$latitude,
+            popup = lapply(most_recent$preview, HTML)
+  ) %>%
   addProviderTiles("CartoDB.Positron",
                    options = providerTileOptions(minZoom = 2, maxZoom = 25)) %>%
-  setView(de_long, de_lat, zoom = 7)
-kitakits_clust
+  setView(lng = as.numeric(start_coords[1,"longitude"]), 
+          lat = as.numeric(start_coords[1,"latitude"]), 
+          zoom = 7)
+kitakits_map
 
 
 
-
-kitakits_map <- leaflet(kitakits) %>%
+# Create map with pin-clustering with leaflet
+kitakits_clust <- leaflet(kitakits) %>%
   addProviderTiles("CartoDB.Positron",
                    options = providerTileOptions(minZoom = 2, maxZoom = 25)) %>%
   addCircleMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),
@@ -218,9 +228,11 @@ kitakits_map <- leaflet(kitakits) %>%
                    stroke = FALSE, fillOpacity = 0.75,
                    clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>%
   setView(de_long, de_lat, zoom = 5)
-kitakits_map
+kitakits_clust
 
 # IDEA: CHANGE COLOR OF MARKERS: https://github.com/pointhi/leaflet-color-markers
+
+
 
 
 # Export as HTML file
