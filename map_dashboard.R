@@ -83,34 +83,36 @@ map_clust <- leaflet(maillist) %>%
   setView(de_long, de_lat, zoom = 5)
 map_clust
 
-# Create map with pins (no clustering) - for IG
 
-greenLeafIcon <- makeIcon(
-  iconUrl = "https://halo-halo.de/wp-content/uploads/2022/06/Halo-Halo-Logo-noword.png",
-  iconWidth = 38, iconHeight = 25,
-  iconAnchorX = 22, iconAnchorY = 20,
-  shadowWidth = 50, shadowHeight = 64,
-  shadowAnchorX = 4, shadowAnchorY = 62
-)
-
-# determine colors
-pal <- colorFactor(c("#f3bb50", "#326ebd", "#d15956"), domain = c("Österreich", "Deutschland", "Schweiz"))
-
-map <- leaflet(maillist2) %>% addProviderTiles("CartoDB.Positron", 
-                                              options = providerTileOptions(minZoom = 2, maxZoom = 10)) %>% 
-  addCircleMarkers(label = ~ `Ort / Stadt (optional)`,
-    color = ~pal(Land),
-    stroke = FALSE, fillOpacity = 0.5
-  ) %>% 
-  setView(de_long, de_lat, zoom = 5)
-#  addMarkers(label = ~ `Ort / Stadt (optional)`) #, icon = greenLeafIcon)
-
-map
+# 
+# # Create map with pins (no clustering) - for IG
+# 
+# greenLeafIcon <- makeIcon(
+#   iconUrl = "https://halo-halo.de/wp-content/uploads/2022/06/Halo-Halo-Logo-noword.png",
+#   iconWidth = 38, iconHeight = 25,
+#   iconAnchorX = 22, iconAnchorY = 20,
+#   shadowWidth = 50, shadowHeight = 64,
+#   shadowAnchorX = 4, shadowAnchorY = 62
+# )
+# 
+# # determine colors
+# pal <- colorFactor(c("#f3bb50", "#326ebd", "#d15956"), domain = c("Österreich", "Deutschland", "Schweiz"))
+# 
+# map <- leaflet(maillist2) %>% addProviderTiles("CartoDB.Positron", 
+#                                               options = providerTileOptions(minZoom = 2, maxZoom = 10)) %>% 
+#   addCircleMarkers(label = ~ `Ort / Stadt (optional)`,
+#     color = ~pal(Land),
+#     stroke = FALSE, fillOpacity = 0.5
+#   ) %>% 
+#   setView(de_long, de_lat, zoom = 5)
+# #  addMarkers(label = ~ `Ort / Stadt (optional)`) #, icon = greenLeafIcon)
+# 
+# map
 
 
 # Export as HTML file
 saveWidget(map_clust, 'map_cluster.html', selfcontained = FALSE)
-saveWidget(map, 'map.html', selfcontained = FALSE)
+# saveWidget(map, 'map.html', selfcontained = FALSE)
 
 
 
@@ -151,7 +153,7 @@ kitakits$Date <- format(kitakits$Date, "%d %B %Y")
 # create content of pop-up
 w <- 170
 br <- "<br/>"
-kitakits <- kitakits %>% 
+kitakits <- kitakits %>%
   mutate(preview = paste0("<center><img src = '", Image, "', width = ", w, "px></center>", #br,
                           "<b><a href='", Link, "'>", Event, "</a></b>", br,
                           Place, ", ", Country, br,
@@ -159,9 +161,9 @@ kitakits <- kitakits %>%
          )
 
 # clean cities
-kitakits <- kitakits %>% 
-  mutate(location = if_else(is.na(Adresse), 
-                            false = paste0(Adresse, ", ", Country), 
+kitakits <- kitakits %>%
+  mutate(location = if_else(is.na(Adresse),
+                            false = paste0(Adresse, ", ", Country),
                             true = paste0(Place, ", ", Country)))
 
 # using ggmap::geocodes() function to geocode locations
@@ -174,11 +176,11 @@ kitakits[kitakits$Event == "Monatliche Wiener Stammtisch", "latitude"] <- 48.197
 kitakits[kitakits$Event == "Monatliche Wiener Stammtisch", "longitude"] <- 16.365477428835185
 
 
-# convert 
-kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) 
+# convert
+kitakits2 <- kitakits %>% sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 
 
-# geb bb of germany to set default zoom 
+# geb bb of germany to set default zoom
 de_bb <-  getbb("Germany")
 de_long <- 10.4541
 de_lat <- 51.1642
@@ -191,29 +193,30 @@ pal3 <- colorFactor(c("#326ebd", "#f3bb50", "#d15956"), domain = c("Austria", "G
 # Create labels as list
 labs <- as.list(kitakits$preview)
 
-# Create map with pin-clustering with leaflet  
-kitakits_clust <- leaflet(kitakits) %>%  
-  addMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),  
+# Create map with pin-clustering with leaflet
+kitakits_clust <- leaflet(kitakits) %>%
+  addMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),
 #             clusterOptions = markerClusterOptions(), # maxClusterRadius = 15)
-             ) %>% 
-#  addPopups(~long, ~lat, popup=kitakits$preview, 
+             ) %>%
+#  addPopups(~long, ~lat, popup=kitakits$preview,
 #            options = popupOptions(maxWidth = w,
 #                                   closeButton = TRUE
-#            )) %>% 
+#            )) %>%
   addProviderTiles("CartoDB.Positron",
-                   options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
+                   options = providerTileOptions(minZoom = 2, maxZoom = 25)) %>%
   setView(de_long, de_lat, zoom = 7)
 kitakits_clust
 
 
 
-kitakits_map <- leaflet(kitakits) %>% 
+
+kitakits_map <- leaflet(kitakits) %>%
   addProviderTiles("CartoDB.Positron",
-                   options = providerTileOptions(minZoom = 2, maxZoom = 12)) %>% 
+                   options = providerTileOptions(minZoom = 2, maxZoom = 25)) %>%
   addCircleMarkers(~longitude, ~latitude, popup = lapply(labs, HTML),
                    color = ~pal3(Country),
                    stroke = FALSE, fillOpacity = 0.75,
-                   clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>% 
+                   clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>%
   setView(de_long, de_lat, zoom = 5)
 kitakits_map
 
@@ -224,10 +227,6 @@ kitakits_map
 saveWidget(kitakits_clust, 'kitakits_clust.html', selfcontained = FALSE)
 saveWidget(kitakits_map, 'kitakits_map.html', selfcontained = FALSE)
 
-
-
-
-table(maillist$Land)
 
 
 
