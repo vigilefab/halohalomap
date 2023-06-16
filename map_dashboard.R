@@ -184,7 +184,7 @@ de_bb <-  getbb("Germany")
 de_long <-  10.4541
 de_lat <-  51.1642
 
-start_coords <- kitakits[kitakits$Date == max(kitakits$Date), c("Date", "Event", "longitude", "latitude", "preview")]
+start_coords <- kitakits[kitakits$Date == max(kitakits$Date), c("Date", "Event", "longitude", "latitude", "preview")] %>% as.data.frame
 
 # most recent events in three countries
 recent <- kitakits %>% group_by(Country) %>% summarize(recent_date = max(Date))
@@ -201,19 +201,14 @@ labs <- as.list(kitakits$preview)
 # kitakits map
 kitakits_map <- leaflet(kitakits) %>%
   addMarkers(~longitude, ~latitude, popup = lapply(labs, HTML)) %>%
-  # addMarkers(lng = as.numeric(start_coords[1, "longitude"]), 
-  #            lat = as.numeric(start_coords[1, "latitude"]), 
-  #            # popup = as.character(start_coords[1, "preview"]),
-  #            # popupOptions = popupOptions(closeOnClick = FALSE)
-  #            ) %>%
-  addPopups(lng = most_recent$longitude, 
-            lat = most_recent$latitude,
-            popup = lapply(most_recent$preview, HTML)
+  addPopups(lng = start_coords$longitude, 
+            lat = start_coords$latitude,
+            popup = start_coords$preview
   ) %>%
   addProviderTiles("CartoDB.Positron",
                    options = providerTileOptions(minZoom = 2, maxZoom = 25)) %>%
-  setView(lng = as.numeric(start_coords[1,"longitude"]), 
-          lat = as.numeric(start_coords[1,"latitude"]), 
+  setView(lng = start_coords$longitude, 
+          lat = start_coords$latitude, 
           zoom = 7)
 kitakits_map
 
