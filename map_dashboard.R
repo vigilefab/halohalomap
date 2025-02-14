@@ -39,7 +39,7 @@ rm(list = ls())
 #-------------------------------------------------
 
 # import mailing mailing list
-maillist <- read_xlsx(path = "../../Mailinglist.xlsx", col_types = "text")
+maillist <- read_xlsx(path = "../../MailingList.xlsx", col_types = "text")
 
 
 # clean date
