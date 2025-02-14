@@ -20,6 +20,8 @@ library(htmlwidgets)
 library(htmltools)
 library(magrittr)
 library(tidygeocoder)
+library(data.table)
+library(tidygeocoder)
 
 # set wd
 setwd("C:/Users/user/Dropbox/Halo-Halo/Halo-Halo IG & Website/Sonstiges/Pinboard Map/git/halohalomap")
@@ -39,37 +41,34 @@ rm(list = ls())
 #-------------------------------------------------
 
 # import mailing mailing list
-maillist <- read_xlsx(path = "../../MailingList.xlsx", col_types = "text")
+maillist <- read_xlsx(path = "../../MailingList.xlsx", col_types = "text") %>% select(Postleitzahl, Land) 
 
-
-# clean date
-split <- strsplit(x = maillist$Timestamp, split = c(" ")) 
-split <- do.call(rbind.data.frame, split)
-maillist$date <- as.Date(split[[1]], "%m/%d/%Y")
 
 # clean cities
-maillist <- maillist[!is.na(maillist$`Ort / Stadt (optional)`), ]
-maillist$city <- paste0(maillist$`Ort / Stadt (optional)`, ", ", maillist$Land)
+maillist <- maillist[!is.na(maillist$Postleitzahl), ]
+maillist <- maillist %>%
+  mutate(city = if_else(grepl(pattern = "[a-zA-Z]", x = Postleitzahl), true = paste0(Postleitzahl, ", ", Land), false = as.character(NA)),
+         zip = if_else(grepl(pattern = "[0-9]", x = Postleitzahl), true = Postleitzahl, false = as.character(NA)),#
+         address = paste(Postleitzahl, Land)) %>%
+  mutate(zip = if_else(grepl(pattern = "[a-zA-Z§]", x = Postleitzahl), true = as.character(NA), false = paste(zip, Land)))
 
-# using getbb() function to geocode locations
-for(i in 1:nrow(maillist)){
-  coordinates = getbb(maillist$city[i])
-  maillist$long[i] = (coordinates[1,1] + coordinates[1,2])/2
-  maillist$lat[i] = (coordinates[2,1] + coordinates[2,2])/2
-}
+
+
+# using tidygeocoder::geocode() function to geocode locations
+maillist <- maillist %>% 
+  geocode(address, method = 'osm', lat = latitude , long = longitude)
 
 
 # add jitter to coordinates so that identical coordinates differ slightly
- maillist$lat_jit <- jitter(maillist$lat, factor = 12)
- maillist$lon_jit <- jitter(maillist$long, factor = 3)
+maillist$lat_jit <- jitter(maillist$latitude, factor = 12)
+ maillist$lon_jit <- jitter(maillist$longitude, factor = 3)
 
 
 # convert 
  maillist2 <- maillist %>% sf::st_as_sf(coords = c("lon_jit", "lat_jit"), crs = 4326) 
 
  
-# geb bb of germany to set default zoom 
- de_bb <-  getbb("Germany")
+# coords of germany to set default zoom 
  de_long <- 10.4541
  de_lat <- 51.1642
  
@@ -78,7 +77,7 @@ for(i in 1:nrow(maillist)){
 map_clust <- leaflet(maillist) %>% 
   addProviderTiles("CartoDB.Positron",
                    options = providerTileOptions(minZoom = 2, maxZoom = 9)) %>% 
-  addMarkers(label = ~ `Ort / Stadt (optional)`,
+  addMarkers(label = ~ `address`,
              clusterOptions = markerClusterOptions(maxClusterRadius = 15)) %>% 
   setView(de_long, de_lat, zoom = 5)
 map_clust
